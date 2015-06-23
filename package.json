@@ -1,0 +1,26 @@
+{
+  "name": "ardrone-nes-leap",
+  "version": "0.0.1",
+  "description": "A fun little project with the ar drone, a vintage nes controller and a leap motion.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DannyvanderJagt/ardrone-nes-leap.git"
+  },
+  "keywords": [
+    "ardrone",
+    "drone",
+    "nes",
+    "leap",
+    "leap motion"
+  ],
+  "author": "Danny van der Jagt <dannyvanderjagt@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DannyvanderJagt/ardrone-nes-leap/issues"
+  },
+  "homepage": "https://github.com/DannyvanderJagt/ardrone-nes-leap#readme"
+}
