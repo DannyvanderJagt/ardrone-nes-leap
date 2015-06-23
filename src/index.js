@@ -6,6 +6,7 @@ var	util			= require('util'),
 
 // Controllers.
 var NES = require('./nes.js');
+var Leap = require('./leap.js');
 
 
 // Module.
@@ -40,7 +41,7 @@ var	Drone = function(){
 	// Up to two controllers.
 	this.controllers = [
 		new NES({
-			serial: "/dev/cu.usbmodem1411", // Make sure this is set to your port! 
+			serial: "/dev/cu.usbmodem1421", // Make sure this is set to your port! 
 		    controllers:[
 		        {
 		            clock: 2,
@@ -48,7 +49,8 @@ var	Drone = function(){
 		            data: 4
 		        }
 		    ]
-		})
+		}),
+		new Leap()
 	];
 
 	this.controllersReady = 0;
