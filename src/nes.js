@@ -1,6 +1,6 @@
 // Dependencies.
 var	util			= require('util'),
-	EventEmitter	= require('events').EventEmitter,
+	EventEmitter	= require('EventEmitter2').EventEmitter2,
 	Nes 			= require('arduino-nes');
 
 // Module.
@@ -8,6 +8,8 @@ var Controller = function(data){
 	if(!(this instanceof Controller)){
 		return new Controller(data);
 	}
+
+	this.ready = false;
 
 	this.serial = data.serial;
 	this.controllers = data.controllers;
@@ -28,7 +30,7 @@ Controller.prototype.connect = function(){
 		controllers: this.controllers
 	});
 
-	this.client.on('error', this.onError);
+	this.client.on('error', this.onError.bind(this));
 	this.client.on('connected', this.onConnection.bind(this));
 	this.client.on('disconnect', this.onDisconnect.bind(this));
 	this.client.on('ready', this.onReady.bind(this));
@@ -52,13 +54,14 @@ Controller.prototype.onDisconnect = function(){
 }
 
 Controller.prototype.onReady = function(){
+	this.ready = true;
 	this.emit('ready');
 	this.client.controller[0].on('*', this.onCommand.bind(this));
 	return this;
 }
 
 Controller.prototype.onCommand = function(event){
-	var value = 0.3;
+	var value = 0.2;
 	var droneEvent = event;
 	if(event === 'up'){
 		droneEvent = 'forward';

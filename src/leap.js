@@ -1,15 +1,32 @@
 // Dependencies.
 var	util			= require('util'),
-	EventEmitter	= require('events').EventEmitter,
+	EventEmitter	= require('EventEmitter2').EventEmitter2,
 	Leap 			= require('leapjs'),
 	controller 		= new Leap.Controller();
 	// controller.connect();
 
 // Module.
-var Controller = function(data){
+var Controller = function(Drone){
 	if(!(this instanceof Controller)){
-		return new Controller(data);
+		return new Controller(Drone);
 	}
+
+	this.ready = false;
+	this.Drone = Drone;
+
+	this.Drone.on('takeoff', function(){
+		setTimeout(function(){
+			console.log("TAKEOFF DONE!!!");
+			motion.arborne = 1;
+		},500);
+	});
+
+	this.Drone.on('land', function(){
+		setTimeout(function(){
+			motion.arborne = 0;
+		},500);
+	});
+
 
 	this.load();
 
@@ -22,6 +39,7 @@ util.inherits(Controller, EventEmitter);
 Controller.prototype.load = function(){
 	// Little hack.
 	setTimeout(function(){
+		this.ready = true;
 		this.emit('ready');
 	}.bind(this));
 
@@ -35,6 +53,12 @@ var preHandLeft = 0;
 var preHandRight = 0;
 
 Controller.prototype.loop = function(frame){
+	if(this.Drone.arborne > 0 && frame.hands.length === 0){
+		// Land.
+		this.emit('command', 'stop');
+		this.emit('command', 'land');
+	}
+
 	var left = null;
 	var right = null;
 	var r = {};
@@ -119,154 +143,181 @@ var motion = {
 	forward: 0,
 	launch: 0,
 	up: 0,
-	clockwise: 0
+	clockwise: 0,
+	arborne: 0
 }
 
 Controller.prototype.process = function(l,r){
-	// console.log(l.grap, r.grap);
 	if(l.grap > 0.8 && r.grap > 0.8){
 		if(motion.launch === 0){
-			console.log("LAUNCH OR LAND");
+			// this.emit('command', 'stop');
 			this.emit('command', 'toggleTakeoffAndLand');
-			this.emit('command', 'stop');
 			motion.launch = 1;
 			setTimeout(function(){
 				motion.launch = 0;
-			},1000);
+			},500);
 		}
 	}
 
-	if(l.grap > 0.8){
-		// Clockwise
-		if(motion.clockwise === 0){
-			console.log('counter clockwise');
-			this.emit('command', 'turnCounterClockwise', 0.1);
-			motion.clockwise = -1;
-		}
-	}else if(r.grap > 0.8){
-		// Clockwise
-		if(motion.clockwise === 0){
-			console.log('clockwise');
-			this.emit('command', 'turnClockwise', 0.1);
-			motion.clockwise = 1;
-		}
-	}else if(motion.clockwise !== 0){
-		motion.clockwise = 0;
-		console.log('stop clockwise');
-	}
+	if(this.Drone.arborne > 0 && motion.arborne > 0){
+		// if(l.grap > 0.8){
+		// 	// Clockwise
+		// 	if(motion.clockwise === 0){
+		// 		console.log('counter clockwise');
+		// 		this.emit('command', 'turnCounterClockwise', 0.1);
+		// 		motion.clockwise = -1;
+		// 	}
+		// }else if(r.grap > 0.8){
+		// 	// Clockwise
+		// 	if(motion.clockwise === 0){
+		// 		console.log('clockwise');
+		// 		this.emit('command', 'turnClockwise', 0.1);
+		// 		motion.clockwise = 1;
+		// 	}
+		// }else if(motion.clockwise !== 0){
+		// 	motion.clockwise = 0;
+		// 	console.log('stop clockwise');
+		// }
 
-	// Right hand.
-	// Range: 0.2 - 0.4
-	if(r.roll && r.grap == 0){
-		r.roll = r.roll * 100;
-		if(r.roll > 40){
-			r.roll = 40;
-		}else if(r.roll < -40){
-			r.roll = -40;
-		}
-		if(r.roll > 20){
-			if(motion.roll === 0){
-				motion.roll = -1;
-				console.log('left');
-				this.emit('command', 'left', 0.1);
+		// Right hand.
+		// Range: 0.2 - 0.4
+		if(r.roll && r.grap < 0.5 && motion.clockwise === 0){
+			r.roll = r.roll * 100;
+			if(r.roll > 40){
+				r.roll = 40;
+			}else if(r.roll < -50){
+				r.roll = -40;
 			}
-		}else if(r.roll < -20){
-			if(motion.roll === 0){
-				console.log('right');
-				this.emit('command', 'right', 0.1);
-				motion.roll = 1;
-			}
-		}else{
-			if(motion.roll !== 0){
-				console.log('stop');
-				// this.emit('command', 'stop');
-				this.emit('command', 'left', 0);
-				this.emit('command', 'right', 0);
-				motion.roll = 0;
-			}
-		}
-	}
-
-	// forwards and backwards.
-	if(r.forback){
-		if(r.forback <  -25){
-			if(motion.forward === 0){
-				console.log('forward');
-				this.emit('command', 'forward', 0.1);
-				motion.forward = 1;
-			}
-		}else if(r.forback > 25){
-			if(motion.forward === 0){
-				console.log('backward');
-				this.emit('command', 'backward', 0.1);
-				motion.forward = -1;
-			}
-		}else{
-			if(motion.forward !== 0){
-				console.log('stop');
-				// this.emit('command', 'stop');
-				this.emit('command', 'forward', 0);
-				this.emit('command', 'backward', 0);
-				motion.forward = 0;
+			if(r.roll > 20){
+				if(motion.roll === 0){
+					motion.roll = -1;
+					console.log('left');
+					this.emit('command', 'left', 0.3);
+				}
+			}else if(r.roll < -30){
+				if(motion.roll === 0){
+					console.log('right');
+					this.emit('command', 'right', 0.3);
+					motion.roll = 1;
+				}
+			}else{
+				if(motion.roll !== 0){
+					console.log('stop');
+					// this.emit('command', 'stop');
+					this.emit('command', 'left', 0);
+					this.emit('command', 'right', 0);
+					motion.roll = 0;
+				}
 			}
 		}
-	}
 
-	// up and down. / height.
-	// if(r.heightChange){
-	// 	r.heightChange = r.heightChange * 10;
-	// 	if(r.heightChange > 15){
-	// 		if(motion.height === 0){
-	// 			console.log('down');
-	// 			this.emit('command', 'down', 0.1);
-	// 			motion.height = -1;
-	// 		}
-	// 	}else if(r.heightChange < -15){
-	// 		if(motion.height === 0){
-	// 			console.log('up');
-	// 			this.emit('command', 'up', 0.1);
-	// 			motion.height = 1;
-	// 		}
-	// 	}else{
-	// 		if(motion.height !== 0){
-	// 			console.log('stop');
-	// 			this.emit('command', 'stop');
-	// 			motion.height = 0;
-	// 		}
-	// 	}
-	// }
+		// // forwards and backwards.
+		if(r.forback && r.grap < 0.5 && motion.clockwise === 0){
+			if(r.forback <  -25){
+				if(motion.forward === 0){
+					console.log('forward');
+					this.emit('command', 'forward', 0.2);
+					motion.forward = 1;
+				}
+			}else if(r.forback > 25){
+				if(motion.forward === 0){
+					console.log('backward');
+					this.emit('command', 'backward', 0.2);
+					motion.forward = -1;
+				}
+			}else{
+				if(motion.forward !== 0){
+					console.log('stop');
+					// this.emit('command', 'stop');
+					this.emit('command', 'forward', 0);
+					this.emit('command', 'backward', 0);
+					motion.forward = 0;
+				}
+			}
+		}
 
-	// if(r.height){
-	// 	console.log(r.height);
-	// 	if(r.height > 150 && r.height < 250){
-	// 		// Change height of drone.
-	// 		console.log('change height of drone ', r.height);
-	// 	}
-	// }
-	
-	// Left hand.
-	// up and down.
-	if(l.forback){
-		// console.log(l.forback);
-		if(l.forback >  25){
-			if(motion.up === 0){
-				console.log('up');
-				this.emit('command', 'up', 0.1);
-				motion.up = 1;
+		if(l.roll && l.grap < 0.5){
+			l.roll = l.roll * 100;
+			if(l.roll > 40){
+				l.roll = 40;
+			}else if(l.roll < -50){
+				l.roll = -40;
 			}
-		}else if(l.forback < -25){
-			if(motion.up === 0){
-				console.log('down');
-				this.emit('command', 'down', 0.1);
-				motion.up = -1;
+			if(l.roll > 20){
+				if(motion.clockwise === 0){
+					motion.clockwise = -1;
+					this.emit('command', 'turnCounterClockwise', 0.5);
+				}
+			}else if(l.roll < -30){
+				if(motion.clockwise === 0){
+					this.emit('command', 'turnClockwise', 0.5);
+					motion.clockwise = 1;
+				}
+			}else{
+				if(motion.clockwise !== 0){
+					// this.emit('command', 'stop');
+					this.emit('command', 'turnClockwise', 0);
+					this.emit('command', 'turnCounterClockwise', 0);
+					motion.clockwise = 0;
+				}
 			}
-		}else{
-			if(motion.up !== 0){
-				console.log('stop');
-				// this.emit('command', 'stop');
-				this.emit('command', 'forward', 0);
-				this.emit('command', 'backward', 0);
-				motion.up = 0;
+		}
+
+		// up and down. / height.
+		// if(r.heightChange){
+		// 	r.heightChange = r.heightChange * 10;
+		// 	if(r.heightChange > 15){
+		// 		if(motion.height === 0){
+		// 			console.log('down');
+		// 			this.emit('command', 'down', 0.1);
+		// 			motion.height = -1;
+		// 		}
+		// 	}else if(r.heightChange < -15){
+		// 		if(motion.height === 0){
+		// 			console.log('up');
+		// 			this.emit('command', 'up', 0.1);
+		// 			motion.height = 1;
+		// 		}
+		// 	}else{
+		// 		if(motion.height !== 0){
+		// 			console.log('stop');
+		// 			this.emit('command', 'stop');
+		// 			motion.height = 0;
+		// 		}
+		// 	}
+		// }
+
+		// if(r.height){
+		// 	console.log(r.height);
+		// 	if(r.height > 150 && r.height < 250){
+		// 		// Change height of drone.
+		// 		console.log('change height of drone ', r.height);
+		// 	}
+		// }
+		
+		// Left hand.
+		// up and down.
+		if(l.forback && l.grap == 0 && motion.clockwise === 0){
+			// console.log(l.forback);
+			if(l.forback >  25){
+				if(motion.up === 0){
+					console.log('up');
+					this.emit('command', 'up', 0.5);
+					motion.up = 1;
+				}
+			}else if(l.forback < -25){
+				if(motion.up === 0){
+					console.log('down');
+					this.emit('command', 'down', 0.5);
+					motion.up = -1;
+				}
+			}else{
+				if(motion.up !== 0){
+					console.log('stop');
+					this.emit('command', 'up', 0);
+					this.emit('command', 'down', 0);
+					motion.up = 0;
+				}
 			}
 		}
 	}

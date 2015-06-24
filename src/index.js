@@ -1,8 +1,22 @@
+/* TODO: 
+
+- Clean up code
+- Code restructure.
+- Wait of both controllers and ardrone to be ready.
+- Try to reach a certain height automatic.??? 
+
+- PNGStream / video stream?
+
+- Create fancy client.
+
+*/ 
+
 // Dependencies.
 var	util			= require('util'),
-	EventEmitter	= require('events').EventEmitter,
+	EventEmitter	= require('eventemitter2').EventEmitter2,
 	arDrone 		= require('ar-drone'),
 	io 				= require('socket.io');
+	Browser			= require('./browser');
 
 // Controllers.
 var NES = require('./nes.js');
@@ -14,7 +28,7 @@ var	Drone = function(){
 	if(!(this instanceof Drone)){
 		return new Drone();
 	}
-
+		// this.wildcard = true;
 	/**
 	 * Is the drone arbone?
 	 *
@@ -39,8 +53,8 @@ var	Drone = function(){
 	this.state = 0, 
 
 	// Up to two controllers.
-	this.controllers = [
-		new NES({
+	this.controllers = {
+		nes: new NES({
 			serial: "/dev/cu.usbmodem1421", // Make sure this is set to your port! 
 		    controllers:[
 		        {
@@ -50,8 +64,8 @@ var	Drone = function(){
 		        }
 		    ]
 		}),
-		new Leap()
-	];
+		// leap: new Leap(this)
+	};
 
 	this.controllersReady = 0;
 
@@ -91,6 +105,7 @@ util.inherits(Drone, EventEmitter);
 // Connect to the drone.
 Drone.prototype.connect = function(){
 	this.emit('state', this.state);
+
 	// Check for controllers.
 	if(this.controllers.length === 0){
 		this.emit('error', 'There are no controllers to attache!');
@@ -115,31 +130,40 @@ Drone.prototype.connect = function(){
 		console.log('batteryChange', arguments);
 	});
 
-	this.client.on('altitudeChange', function(){
-		console.log('altitudeChange', arguments);
-	});
+	// this.client.on('altitudeChange', function(){
+	// 	console.log('altitudeChange', arguments);
+	// });
 
 	// Wait for the controllers to connect!
 	// Listen to the controllers.
-	for(var controller in this.controllers){
-		controller = this.controllers[controller];
-
-		controller.on('ready', this.onControllerReady.bind(this));
-		controller.on('disconnect', this.onControllerDisconnect.bind(this));
+	var controller = null
+	for(var name in this.controllers){
+		controller = this.controllers[name];
+		this.emit('controller', name, 'searching');
+		controller.on('ready', this.onControllerReady.bind(this, name));
+		controller.on('disconnect', this.onControllerDisconnect.bind(this, name));
 		controller.on('command', this.onCommand.bind(this));
 	}
 
-	this.client.animateLeds('doubleMissile', 5, 6);
+	// this.client.animateLeds('doubleMissile', 5, 6);
 
 	return this;
 }
 
 // Controller events.
-Drone.prototype.onControllerReady = function(){
-	console.log('A controller is ready');
+Drone.prototype.onControllerReady = function(name){
+	this.emit('controller', name, 'ready');
 	this.controllersReady++;
 
-	if(this.controllersReady === this.controllers.length && this.state === 4){
+	var allReady = true;
+	for(var name in this.controllers){
+		if(this.controllers[name].ready !== true){
+			allReady = false;
+			return false;
+		}
+	}
+
+	if(allReady === true){
 		this.state = 5;
 		this.emit('state', this.state);
 	}
@@ -147,10 +171,10 @@ Drone.prototype.onControllerReady = function(){
 	return this;
 }
 
-Drone.prototype.onControllerDisconnect = function(){
+Drone.prototype.onControllerDisconnect = function(name){
 	// Just the be careful.
 	this.land();
-
+	this.emit('controller', name, 'disconnect');
 	this.state = 6;
 	this.controllersReady--;
 	this.emit('state', 6);
@@ -282,13 +306,27 @@ Drone.prototype.stop = function(){
 
 var d = Drone();
 
-d.on('error', console.log.bind(console,'error '));
-d.on('state', function(){
-	console.log('STATE', arguments);
+d.on('*', function(){
+	console.log(arguments);
+	Browser.send.apply(Browser, arguments);
 });
 
-d.on('command', function(){
-	console.log('command', arguments);
-});
+// d.on('error', console.log.bind(console,'error '));
+// d.on('state', function(){
+// 	console.log('STATE', arguments);
+// });
+
+// d.on('controller', function(name){
+// 	console.log('Controller', arguments);
+// });
+
+// d.on('command', function(command, value){
+// 	Browser.send('command', {
+// 		command: command,
+// 		value: value
+// 	});
+// 	console.log('command', arguments);
+// });
+
 
 d.connect();
