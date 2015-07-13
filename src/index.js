@@ -2,8 +2,9 @@
 
 - Clean up code
 - Code restructure.
-- Wait of both controllers and ardrone to be ready.
+- Wait of both controllers and ardrone to be ready. (done)
 - Try to reach a certain height automatic.??? 
+- Stabalize nes controller
 
 - PNGStream / video stream?
 
@@ -17,6 +18,7 @@ var	util			= require('util'),
 	arDrone 		= require('ar-drone'),
 	io 				= require('socket.io');
 	Browser			= require('./browser');
+var clc = require('cli-color');
 
 // Controllers.
 var NES = require('./nes.js');
@@ -54,17 +56,17 @@ var	Drone = function(){
 
 	// Up to two controllers.
 	this.controllers = {
-		nes: new NES({
-			serial: "/dev/cu.usbmodem1421", // Make sure this is set to your port! 
-		    controllers:[
-		        {
-		            clock: 2,
-		            latch: 3,
-		            data: 4
-		        }
-		    ]
-		}),
-		// leap: new Leap(this)
+		// nes: new NES({
+		// 	serial: "/dev/cu.usbmodem1421", // Make sure this is set to your port! 
+		//     controllers:[
+		//         {
+		//             clock: 2,
+		//             latch: 3,
+		//             data: 4
+		//         }
+		//     ]
+		// }),
+		leap: new Leap(this)
 	};
 
 	this.controllersReady = 0;
@@ -127,7 +129,7 @@ Drone.prototype.connect = function(){
 	// this.client.config('general:navdata_demo', 'FALSE');
 
 	this.client.on('batteryChange', function(){
-		console.log('batteryChange', arguments);
+		// console.log('batteryChange', arguments);
 	});
 
 	// this.client.on('altitudeChange', function(){
@@ -210,7 +212,7 @@ Drone.prototype.land = function(){
 }
 
 Drone.prototype.takeoff = function(){
-	console.log('Trying to take off!');
+	// console.log('Trying to take off!');
 	if(!this.client){
 		return false;
 	}
@@ -306,8 +308,40 @@ Drone.prototype.stop = function(){
 
 var d = Drone();
 
-d.on('*', function(){
-	console.log(arguments);
+var logStates = {
+	0: 'offline',
+	1 : 'connecting...',
+	3 : 'connection failed',
+	4 : 'connected',
+	5 : 'ready',
+	6 : 'no controllers attached',
+};
+
+d.on('*', function(event, command, value){
+	var msg = "";
+	if(event === 'command'){
+		if(value == 0){
+			msg = clc.xterm(242)("Stop:" + command);
+		}else{
+			var msg = command;
+			if(value !== undefined){
+				msg += " at: " + value + " speed.";
+			}
+			msg = clc.xterm(242)(msg);
+		}
+	}else if(event === 'land'){
+		msg = clc.xterm(228)(command);
+	}else if(event === 'state'){
+		msg = clc.xterm(36)('State: ')+ logStates[command];
+	}else if(event === 'controller'){
+		msg = clc.xterm(105)('Controller ('+command+'): ') + value;
+	}else if(event === 'connected'){
+		msg = clc.xterm(205)('Drone: ') + 'connected!';
+	}else{
+		msg = clc.xterm(36)(event, command, value);
+	}
+	console.log("> " + msg);
+	// console.log(arguments);
 	Browser.send.apply(Browser, arguments);
 });
 

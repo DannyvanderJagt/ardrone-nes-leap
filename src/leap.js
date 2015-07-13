@@ -16,7 +16,7 @@ var Controller = function(Drone){
 
 	this.Drone.on('takeoff', function(){
 		setTimeout(function(){
-			console.log("TAKEOFF DONE!!!");
+			// console.log("TAKEOFF DONE!!!");
 			motion.arborne = 1;
 		},500);
 	});
@@ -191,19 +191,15 @@ Controller.prototype.process = function(l,r){
 			if(r.roll > 20){
 				if(motion.roll === 0){
 					motion.roll = -1;
-					console.log('left');
 					this.emit('command', 'left', 0.3);
 				}
 			}else if(r.roll < -30){
 				if(motion.roll === 0){
-					console.log('right');
 					this.emit('command', 'right', 0.3);
 					motion.roll = 1;
 				}
 			}else{
 				if(motion.roll !== 0){
-					console.log('stop');
-					// this.emit('command', 'stop');
 					this.emit('command', 'left', 0);
 					this.emit('command', 'right', 0);
 					motion.roll = 0;
@@ -215,20 +211,16 @@ Controller.prototype.process = function(l,r){
 		if(r.forback && r.grap < 0.5 && motion.clockwise === 0){
 			if(r.forback <  -25){
 				if(motion.forward === 0){
-					console.log('forward');
 					this.emit('command', 'forward', 0.2);
 					motion.forward = 1;
 				}
 			}else if(r.forback > 25){
 				if(motion.forward === 0){
-					console.log('backward');
 					this.emit('command', 'backward', 0.2);
 					motion.forward = -1;
 				}
 			}else{
 				if(motion.forward !== 0){
-					console.log('stop');
-					// this.emit('command', 'stop');
 					this.emit('command', 'forward', 0);
 					this.emit('command', 'backward', 0);
 					motion.forward = 0;
@@ -236,32 +228,32 @@ Controller.prototype.process = function(l,r){
 			}
 		}
 
-		if(l.roll && l.grap < 0.5){
-			l.roll = l.roll * 100;
-			if(l.roll > 40){
-				l.roll = 40;
-			}else if(l.roll < -50){
-				l.roll = -40;
-			}
-			if(l.roll > 20){
-				if(motion.clockwise === 0){
-					motion.clockwise = -1;
-					this.emit('command', 'turnCounterClockwise', 0.5);
-				}
-			}else if(l.roll < -30){
-				if(motion.clockwise === 0){
-					this.emit('command', 'turnClockwise', 0.5);
-					motion.clockwise = 1;
-				}
-			}else{
-				if(motion.clockwise !== 0){
-					// this.emit('command', 'stop');
-					this.emit('command', 'turnClockwise', 0);
-					this.emit('command', 'turnCounterClockwise', 0);
-					motion.clockwise = 0;
-				}
-			}
-		}
+		// if(l.roll && l.grap < 0.5){
+		// 	l.roll = l.roll * 100;
+		// 	if(l.roll > 40){
+		// 		l.roll = 40;
+		// 	}else if(l.roll < -50){
+		// 		l.roll = -40;
+		// 	}
+		// 	if(l.roll > 20){
+		// 		if(motion.clockwise === 0){
+		// 			motion.clockwise = -1;
+		// 			this.emit('command', 'turnCounterClockwise', 0.5);
+		// 		}
+		// 	}else if(l.roll < -30){
+		// 		if(motion.clockwise === 0){
+		// 			this.emit('command', 'turnClockwise', 0.5);
+		// 			motion.clockwise = 1;
+		// 		}
+		// 	}else{
+		// 		if(motion.clockwise !== 0){
+		// 			// this.emit('command', 'stop');
+		// 			this.emit('command', 'turnClockwise', 0);
+		// 			this.emit('command', 'turnCounterClockwise', 0);
+		// 			motion.clockwise = 0;
+		// 		}
+		// 	}
+		// }
 
 		// up and down. / height.
 		// if(r.heightChange){
@@ -301,19 +293,19 @@ Controller.prototype.process = function(l,r){
 			// console.log(l.forback);
 			if(l.forback >  25){
 				if(motion.up === 0){
-					console.log('up');
+					// console.log('up');
 					this.emit('command', 'up', 0.5);
 					motion.up = 1;
 				}
 			}else if(l.forback < -25){
 				if(motion.up === 0){
-					console.log('down');
+					// console.log('down');
 					this.emit('command', 'down', 0.5);
 					motion.up = -1;
 				}
 			}else{
 				if(motion.up !== 0){
-					console.log('stop');
+					// console.log('stop');
 					this.emit('command', 'up', 0);
 					this.emit('command', 'down', 0);
 					motion.up = 0;
